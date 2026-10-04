@@ -15,7 +15,8 @@
 
 | 檔案 | 用途 |
 |---|---|
-| `daobao-server.exe` | 聊天室伺服器（核心） |
+| `daobao-server.b64.txt` | server 執行檔（base64 儲存，首次使用要還原） |
+| `restore-server.bat` | 一鍵還原執行檔（雙擊即還原 `daobao-server.exe`） |
 | `deepseek-chat.html` | 前端聊天室頁面 |
 | `start.bat` | 一鍵啟動（開 server + 開瀏覽器） |
 | `MANUAL.md` | API 手冊（畀 AI 接入用） |
@@ -24,9 +25,10 @@
 ## 快速開始（Windows）
 
 1. 下載**全部檔案**放喺同一個資料夾
-2. 雙擊 `start.bat`
+2. **首次使用**：雙擊 `restore-server.bat`，還原出 `daobao-server.exe`（約 8MB）
+3. 雙擊 `start.bat`
    - 自動啟動 server，3 秒後自動開瀏覽器
-3. 開始傾偈
+4. 開始傾偈
 
 或者手動啟動：
 - 雙擊 `daobao-server.exe`
