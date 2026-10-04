@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三方聊天室</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='15' fill='%2307C160'/><text x='50' y='65' font-size='45' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'>3</text></svg>">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Noto Sans SC',-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif;background:#d4d4d4;display:flex;justify-content:center}
+#app{width:100%;max-width:900px;height:100%;background:#ededed;display:flex;box-shadow:0 0 30px rgba(0,0,0,.15);overflow:hidden}
+@media(min-width:901px){body{padding:20px 0}#app{height:calc(100% - 40px);border-radius:12px}}
+
+/* ===== Sidebar ===== */
+#sidebar{width:210px;flex-shrink:0;background:#2e2e38;color:#ccc;display:flex;flex-direction:column}
+.sidebar-header{padding:14px;border-bottom:1px solid #444;font-size:13px;font-weight:700;color:#fff;display:flex;justify-content:space-between;align-items:center}
+#new-room-btn{background:#07C160;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:12px;cursor:pointer}
+#room-list{flex:1;overflow-y:auto;padding:6px}
+.room-item{padding:9px 12px;border-radius:6px;cursor:pointer;font-size:13px;margin-bottom:2px;display:flex;justify-content:space-between;align-items:center}
+.room-item:hover{background:#3d3d4a}
+.room-item.active{background:#07C160;color:#fff}
+.room-item .room-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sidebar-footer{padding:10px;border-top:1px solid #444;font-size:11px}
+.sidebar-footer label{display:block;color:#999;margin-bottom:4px}
+.sidebar-footer select{width:100%;padding:5px;border-radius:4px;border:1px solid #555;background:#3d3d4a;color:#fff;font-size:12px}
+#save-btn{width:100%;margin-top:8px;padding:6px;background:#5b8def;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px}
+
+/* ===== Main ===== */
+#main{flex:1;display:flex;flex-direction:column;min-width:0}
+header{height:48px;flex-shrink:0;background:#f7f7f7;border-bottom:1px solid #d9d9d9;display:flex;align-items:center;justify-content:space-between;padding:0 14px}
+#room-title{font-size:15px;font-weight:600;cursor:pointer}
+#room-title:hover{color:#07C160}
+#conn-status{font-size:11px;color:#07C160;margin-top:1px}
+
+#messages{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+#messages::-webkit-scrollbar{width:4px}
+#messages::-webkit-scrollbar-thumb{background:#ccc}
+
+.msg-row{display:flex;gap:8px;align-items:flex-start;animation:fade .2s}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+.msg-row.user{flex-direction:row-reverse}
+.avatar{width:34px;height:34px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
+.avatar.localai{background:#5b8def}
+.avatar.doubao{background:#9b59b6}
+.avatar.user{background:#07C160}
+.avatar.claude{background:#d97757}
+.avatar.grok{background:#1a1a1a}
+.avatar.gpt{background:#10a37f}
+.bubble-wrap{max-width:72%;display:flex;flex-direction:column}
+.msg-row.user .bubble-wrap{align-items:flex-end}
+.bubble{padding:9px 12px;border-radius:8px;font-size:14px;line-height:1.6;word-wrap:break-word;white-space:pre-wrap}
+.msg-row.localai .bubble{background:#fff;color:#111;border-top-left-radius:2px}
+.msg-row.doubao .bubble{background:#f0e6ff;color:#2d1b4e;border-top-left-radius:2px;border:1px solid #d4b8f0}
+.msg-row.user .bubble{background:#95EC69;color:#0a3d1a;border-top-right-radius:2px}
+.msg-row.claude .bubble{background:#fdf0e8;color:#5c2e1a;border-top-left-radius:2px;border:1px solid #f0c4a8}
+.msg-row.grok .bubble{background:#2a2a2a;color:#eee;border-top-left-radius:2px}
+.msg-row.gpt .bubble{background:#e6f7f0;color:#0a3d2a;border-top-left-radius:2px;border:1px solid #a8e6cf}
+.bubble .who-tag{font-size:10px;color:#999;margin-bottom:4px;display:block}
+.think-block{background:#f5f5f5;border:1px dashed #ccc;border-radius:6px;padding:6px 8px;margin-bottom:6px;font-size:12px;color:#888;max-height:100px;overflow-y:auto}
+.think-block summary{cursor:pointer;font-weight:600;outline:none}
+.think-block .think-content{margin-top:4px;white-space:pre-wrap}
+.bubble p{margin:0 0 6px}.bubble p:last-child{margin:0}
+.bubble code{background:rgba(0,0,0,.07);padding:1px 5px;border-radius:3px;font-family:Consolas,monospace;font-size:12.5px}
+.bubble pre{background:#1e1e2e;color:#cdd6f4;padding:8px;border-radius:5px;overflow-x:auto;margin:5px 0;font-size:12px}
+.bubble ul,.bubble ol{margin:3px 0 6px 18px}
+.typing{display:inline-flex;gap:4px;padding:4px 0}
+.typing span{width:7px;height:7px;background:#bbb;border-radius:50%;animation:b 1.2s infinite}
+.typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+@keyframes b{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-4px);opacity:1}}
+
+/* ===== Input bar ===== */
+#input-bar{flex-shrink:0;background:#f7f7f7;border-top:1px solid #d9d9d9;padding:8px 12px}
+#target-row{display:flex;gap:6px;margin-bottom:6px}
+.target-btn{padding:4px 10px;border-radius:14px;border:1px solid #ccc;background:#fff;font-size:12px;cursor:pointer;color:#666}
+.target-btn.active{background:#07C160;color:#fff;border-color:#07C160}
+#input-row{display:flex;gap:8px;align-items:flex-end}
+#input{flex:1;border:none;border-radius:6px;padding:9px 12px;font-size:14px;font-family:inherit;resize:none;outline:none;background:#fff;max-height:100px;line-height:1.4}
+#send-btn{width:38px;height:38px;border:none;border-radius:6px;background:#07C160;color:#fff;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+#send-btn:disabled{background:#b5e6c8}
+#send-btn svg{width:18px;height:18px}
+.empty{flex:1;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:13px}
+
+/* ===== 手機適配 ===== */
+@media (max-width:700px){
+  #sidebar{width:140px}
+  .sidebar-header{padding:10px;font-size:12px}
+  #new-room-btn{padding:3px 8px;font-size:11px}
+  .room-item{padding:7px 8px;font-size:12px;border-radius:5px}
+  .sidebar-footer{padding:8px}
+  .sidebar-footer label{font-size:10px}
+  .sidebar-footer select{font-size:11px;padding:4px}
+  #save-btn{padding:5px;font-size:11px}
+  header{height:42px;padding:0 10px}
+  #room-title{font-size:14px}
+  #conn-status{font-size:10px}
+  #turbo-btn{padding:4px 10px;font-size:11px}
+  #messages{padding:10px 10px;gap:10px}
+  .bubble-wrap{max-width:85%}
+  .bubble{font-size:14px;padding:8px 10px}
+  .avatar{width:30px;height:30px;font-size:11px}
+  .think-block{font-size:11px;max-height:80px}
+  #input-bar{padding:6px 8px}
+  #target-row{flex-wrap:wrap;gap:5px;margin-bottom:5px}
+  .target-btn{padding:3px 8px;font-size:11px}
+  #post-as{font-size:11px;padding:2px 4px;margin-left:auto}
+  #input-row{gap:6px}
+  #input{font-size:16px;padding:8px 10px}
+  #attach-btn,#send-btn{width:36px;height:36px}
+  #send-btn svg{width:16px;height:16px}
+  #attach-btn{font-size:16px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <div class="sidebar-header">
+      <span>聊天室</span>
+      <button id="new-room-btn">+ 新</button>
+    </div>
+    <div id="room-list"></div>
+    <div class="sidebar-footer">
+      <label>AI Model</label>
+      <select id="model-select"><option>載入中...</option></select>
+      <button id="save-btn">存檔案 (.txt)</button>
+    </div>
+  </div>
+  <div id="main">
+    <header>
+      <div>
+        <div id="room-title">載入中...</div>
+        <div id="conn-status">連線中...</div>
+      </div>
+      <button id="turbo-btn" style="padding:6px 14px;border-radius:16px;border:2px solid #ccc;background:#fff;font-size:12px;cursor:pointer;color:#666;font-weight:700">⚡ Turbo: OFF</button>
+    </header>
+    <div id="messages"><div class="empty">選擇左邊房間開始</div></div>
+    <div id="input-bar">
+      <div id="target-row">
+        <button class="target-btn active" data-to="local">@本地AI</button>
+        <button class="target-btn" data-to="doubao">@Doubao</button>
+        <button class="target-btn" data-to="both">@兩個都要</button>
+        <select id="post-as" style="margin-left:auto;padding:3px 6px;border-radius:14px;border:1px solid #ccc;font-size:12px;cursor:pointer">
+          <option value="user">以我發言</option>
+          <option value="claude">以 Claude 發言</option>
+          <option value="grok">以 Grok 發言</option>
+          <option value="gpt">以 GPT 發言</option>
+        </select>
+      </div>
+      <div id="input-row">
+        <button id="attach-btn" style="width:38px;height:38px;border:none;border-radius:6px;background:#fff;cursor:pointer;font-size:18px;flex-shrink:0">📎</button>
+        <input type="file" id="file-input" style="display:none">
+        <textarea id="input" rows="1" placeholder="輸入訊息..."></textarea>
+        <button id="send-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
+      </div>
+      <div id="att-preview" style="display:none;padding:4px 8px;font-size:12px;color:#5b8def"></div>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let rooms=[], currentRoom=null, currentTarget="local", lastCount=0, currentModelName="DeepSeek", pendingFile=null;
+
+async function api(path, opts={}){
+  const r=await fetch(path,{headers:{'Content-Type':'application/json'},...opts});
+  if(!r.ok) throw new Error('HTTP '+r.status+' '+path);
+  return r.json();
+}
+
+/* ---- 房間列表 ---- */
+async function loadRooms(){
+  rooms=await api('/api/rooms');
+  const el=$('room-list'); el.innerHTML='';
+  rooms.forEach(r=>{
+    const d=document.createElement('div');
+    d.className='room-item'+(r.id===currentRoom?' active':'');
+    d.innerHTML=`<span class="room-name">${r.name}</span><span style="opacity:.5;font-size:10px">${r.count}</span>`;
+    d.onclick=()=>selectRoom(r.id);
+    el.appendChild(d);
+  });
+}
+
+async function selectRoom(rid){
+  currentRoom=rid; lastCount=0;
+  try{
+    const data=await api(`/api/rooms/${rid}/history`);
+    $('room-title').textContent=data.name;
+    $('model-select').value=data.model;
+    // Short display name
+    if(data.model.includes("qwen3-coder")) currentModelName="Qwen Coder";
+    else if(data.model.includes("qwen3-vl")) currentModelName="Qwen VL";
+    else if(data.model.includes("deepseek")) currentModelName="DeepSeek";
+    else currentModelName=data.model;
+    lastCount=0; renderAll(data.messages);
+  }catch(e){
+    console.error('selectRoom 失敗:',e);
+    $('conn-status').textContent='連線失敗，重試中...';
+    $('conn-status').style.color='#e74c3c';
+  }
+  loadRooms();
+}
+
+/* ---- 渲染 ---- */
+function renderAll(msgs){
+  $('messages').innerHTML='';
+  if(!msgs.length){$('messages').innerHTML='<div class="empty">開始對話啦</div>';return}
+  msgs.forEach(m=>renderMsg(m));
+}
+function renderMsg(m){
+  document.querySelector('.empty')?.remove();
+  const row=document.createElement('div');
+  row.className='msg-row '+m.role;
+  const av=document.createElement('div');
+  av.className='avatar '+m.role;
+  av.textContent={user:'我',localai:'DS',doubao:'DB'}[m.role]||m.role.slice(0,2).toUpperCase();
+  const wrap=document.createElement('div'); wrap.className='bubble-wrap';
+  const nameTag=document.createElement('div');
+  nameTag.style.cssText='font-size:10px;color:#999;margin-bottom:3px;padding:0 2px';
+  if(m.role==='user'){
+    const targetLabel={local:'@本地AI',doubao:'@Doubao',both:'@兩個都要'}[m.to]||'';
+    nameTag.textContent='你 → '+targetLabel;
+    nameTag.style.alignSelf='flex-end';
+  } else if(m.role==='localai'){
+    const mdl = m.model || '';
+    if(mdl.includes("qwen3-coder")) nameTag.textContent="Qwen Coder";
+    else if(mdl.includes("qwen3-vl")) nameTag.textContent="Qwen VL";
+    else if(mdl.includes("deepseek")) nameTag.textContent="DeepSeek";
+    else nameTag.textContent = mdl || "LocalAI";
+  } else if(m.role==='doubao'){
+    nameTag.textContent='Doubao';
+  } else {
+    nameTag.textContent = m.role.charAt(0).toUpperCase()+m.role.slice(1);
+  }
+  wrap.appendChild(nameTag);
+  const bub=document.createElement('div'); bub.className='bubble';
+
+  // Show attachment
+  if(m.attachment){
+    const att=m.attachment;
+    const ext=att.filename.split('.').pop().toLowerCase();
+    if(['png','jpg','jpeg','gif','webp'].includes(ext)){
+      const img=document.createElement('img');
+      img.src=att.url; img.style.cssText='max-width:100%;border-radius:6px;margin-bottom:6px';
+      bub.appendChild(img);
+    } else {
+      const link=document.createElement('a');
+      link.href=att.url; link.target='_blank';
+      link.textContent='📎 '+att.filename;
+      link.style.cssText='display:inline-block;padding:6px 10px;background:rgba(0,0,0,.06);border-radius:4px;margin-bottom:6px;text-decoration:none;color:#5b8def;font-size:13px';
+      bub.appendChild(link);
+      bub.appendChild(document.createElement('br'));
+    }
+  }
+
+  if(m.role==='localai'){
+    const tm=m.content.match(/<think>([\s\S]*?)(<\/think>|$)/);
+    if(tm){
+      const th=tm[1].trim();
+      const ans=m.content.replace(/<think>[\s\S]*?(<\/think>|$)/,'').trim();
+      if(th){const det=document.createElement('details');det.className='think-block';det.innerHTML='<summary>思考</summary><div class="think-content"></div>';det.querySelector('.think-content').textContent=th;wrap.appendChild(det)}
+      bub.innerHTML=marked.parse(ans||'...');
+    } else bub.innerHTML=marked.parse(m.content);
+  } else {
+    bub.textContent=m.content;
+  }
+  wrap.appendChild(bub); row.appendChild(av); row.appendChild(wrap);
+  $('messages').appendChild(row);
+  $('messages').scrollTop=$('messages').scrollHeight;
+}
+
+/* ---- Poll ---- */
+async function poll(){
+  if(!currentRoom) return;
+  try{
+    const data=await api(`/api/rooms/${currentRoom}/history`);
+    $('conn-status').textContent=data.busy?'AI 諗緊...':'在線 · '+data.messages.length+' 則';
+    $('conn-status').style.color=data.busy?'#e67e22':'#07C160';
+    if(data.messages.length>lastCount){
+      for(let i=lastCount;i<data.messages.length;i++) renderMsg(data.messages[i]);
+      lastCount=data.messages.length;
+    }
+  }catch(e){
+    $('conn-status').textContent='連線失敗，重試中...';
+    $('conn-status').style.color='#e74c3c';
+  }
+}
+setInterval(poll,1500);
+
+/* ---- Send ---- */
+async function send(){
+  let t=$('input').value.trim();
+  if((!t&&!pendingFile)||!currentRoom) return;
+  $('input').value=''; $('input').style.height='auto';
+  let payload={message:t,to:currentTarget,post_as:$('post-as').value};
+  if(pendingFile){
+    payload.attachment={filename:pendingFile.name,url:'/uploads/'+pendingFile.savedName};
+    pendingFile=null; $('att-preview').style.display='none';
+  }
+  await api(`/api/rooms/${currentRoom}/send`,{method:'POST',body:JSON.stringify(payload)});
+  poll();
+}
+
+/* ---- Attach ---- */
+$('attach-btn').onclick=()=>$('file-input').click();
+$('file-input').onchange=async()=>{
+  const f=$('file-input').files[0]; if(!f) return;
+  $('att-preview').style.display='block';
+  $('att-preview').textContent='上傳中: '+f.name+'...';
+  const reader=new FileReader();
+  reader.onload=async()=>{
+    const b64=reader.result.split(',')[1];
+    const r=await api('/api/upload',{method:'POST',body:JSON.stringify({filename:f.name,data:b64})});
+    if(r.ok){
+      pendingFile={name:f.name,savedName:r.filename};
+      $('att-preview').textContent='📎 '+f.name+' (已附加)';
+    } else {
+      $('att-preview').textContent='上傳失敗';
+    }
+  };
+  reader.readAsDataURL(f);
+};
+$('send-btn').onclick=send;
+$('input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
+$('input').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'});
+
+/* ---- Target buttons ---- */
+document.querySelectorAll('.target-btn').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.target-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); currentTarget=b.dataset.to;
+  }
+});
+
+/* ---- Turbo mode ---- */
+let turboOn = false;
+$('turbo-btn').onclick=async()=>{
+  turboOn = !turboOn;
+  const btn = $('turbo-btn');
+  if(turboOn){
+    btn.textContent='⚡ TURBO: ON (30 min)';
+    btn.style.background='#ff4444'; btn.style.color='#fff'; btn.style.borderColor='#ff4444';
+  } else {
+    btn.textContent='⚡ Turbo: OFF';
+    btn.style.background='#fff'; btn.style.color='#666'; btn.style.borderColor='#ccc';
+  }
+  // Tell server
+  if(currentRoom) await api(`/api/rooms/${currentRoom}/turbo`,{method:'POST',body:JSON.stringify({on:turboOn})});
+};
+
+/* ---- New room ---- */
+$('new-room-btn').onclick=async()=>{
+  const name=prompt('房間名稱：','新對話'); if(!name) return;
+  const r=await api('/api/rooms',{method:'POST',body:JSON.stringify({name})});
+  await loadRooms(); selectRoom(r.id);
+};
+
+/* ---- Rename ---- */
+$('room-title').onclick=async()=>{
+  const name=prompt('新名稱：',$('room-title').textContent); if(!name||!currentRoom) return;
+  await api(`/api/rooms/${currentRoom}/rename`,{method:'POST',body:JSON.stringify({name})});
+  $('room-title').textContent=name; loadRooms();
+};
+
+/* ---- Model ---- */
+async function loadModels(){
+  try{
+    const models=await api('/api/models');
+    if(Array.isArray(models)){
+      $('model-select').innerHTML=models.map(m=>`<option>${m}</option>`).join('');
+    }
+  }catch(e){
+    console.error('loadModels 失敗:',e);
+    // 唔阻礙流程，model 下拉保持「載入中...」
+  }
+}
+$('model-select').onchange=async()=>{
+  const m=$('model-select').value;
+  if(currentRoom) await api(`/api/rooms/${currentRoom}/model`,{method:'POST',body:JSON.stringify({model:m})});
+  if(m.includes("qwen3-coder")) currentModelName="Qwen Coder";
+  else if(m.includes("qwen3-vl")) currentModelName="Qwen VL";
+  else if(m.includes("deepseek")) currentModelName="DeepSeek";
+  else currentModelName=m;
+  // Re-render to update names
+  const data=await api(`/api/rooms/${currentRoom}/history`);
+  renderAll(data.messages);
+};
+
+/* ---- Save ---- */
+$('save-btn').onclick=async()=>{
+  if(!currentRoom) return;
+  const data=await api(`/api/rooms/${currentRoom}/history`);
+  const defaultName=(data.name||'chat')+'.txt';
+  const fname=prompt('檔名：', defaultName);
+  if(!fname) return;
+  let lines=['# '+data.name+' (model: '+data.model+')',''];
+  data.messages.forEach(m=>{
+    let who={user:'User',localai:(m.model||'LocalAI'),doubao:'Doubao'}[m.role]||m.role;
+    lines.push('['+who+'] '+m.content);
+    lines.push('');
+  });
+  const blob=new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=fname.endsWith('.txt')?fname:fname+'.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+/* ---- Init ---- */
+(async()=>{
+  try{ await loadRooms(); }catch(e){ console.error('loadRooms 失敗:',e); }
+  await loadModels();
+  if(rooms.length){
+    try{ await selectRoom(rooms[0].id); }catch(e){ console.error('自動選房失敗:',e); }
+  }
+})();
+</script>
+</body>
+</html>
